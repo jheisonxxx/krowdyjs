@@ -11,7 +11,8 @@ export class PersonalInformation extends React.Component {
       dni: '',
       username: '',
       password: '',
-      address:''
+      address: '',
+      message: ''
     };
     this.getUserInformation = this.getUserInformation.bind(this);
     this.saveUserInformation = this.saveUserInformation.bind(this);
@@ -21,13 +22,15 @@ export class PersonalInformation extends React.Component {
     this.nextPage = this.nextPage.bind(this);
   }
 
-  handleFirstNameChange(e){
+  handleFirstNameChange(e) {
     this.setState({first_name: e.target.value});
   }
-  handleLastNameChange(e){
+
+  handleLastNameChange(e) {
     this.setState({last_name: e.target.value});
   }
-  handleDniChange(e){
+
+  handleDniChange(e) {
     this.setState({dni: e.target.value});
   }
 
@@ -36,19 +39,17 @@ export class PersonalInformation extends React.Component {
     fetch('http://149.56.47.36:5000/api/userkrowdy/1/', {
       method: 'GET',
       headers: {
-          'Content-Type': ' application/json',
+        'Content-Type': ' application/json',
       }
     })
       .then((response) => response.json())
       .then((responseJson) => {
-        console.log(responseJson);
-        console.log(responseJson.username);
-        this.setState( { first_name: responseJson.first_name });
-        this.setState( { last_name: responseJson.last_name });
-        this.setState( { dni: responseJson.dni });
-        this.setState( { username: responseJson.username });
-        this.setState( { password: responseJson.password });
-        this.setState( { address: responseJson.address });
+        this.setState({first_name: responseJson.first_name});
+        this.setState({last_name: responseJson.last_name});
+        this.setState({dni: responseJson.dni});
+        this.setState({username: responseJson.username});
+        this.setState({password: responseJson.password});
+        this.setState({address: responseJson.address});
       })
       .catch((error) => {
         console.log(error);
@@ -76,7 +77,7 @@ export class PersonalInformation extends React.Component {
     })
       .then((response) => response.json())
       .then((responseJson) => {
-        console.log(responseJson);
+        this.setState({message: 'Se guardo con exito'});
       })
       .catch((error) => {
         console.log(error);
@@ -111,8 +112,10 @@ export class PersonalInformation extends React.Component {
         <br/>
         <input type="text" name="dni" value={this.state.dni} onChange={this.handleDniChange}/>
         <br/>
+        <div>{this.state.message}</div>
         <br/>
         <button onClick={this.saveUserInformation} className="btn btn-primary">Guardar</button>
+        &nbsp;&nbsp;&nbsp;
         <button onClick={this.nextPage} className="btn btn-primary">Siguiente</button>
       </div>
     );

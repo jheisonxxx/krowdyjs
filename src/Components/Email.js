@@ -4,13 +4,13 @@ import {browserHistory} from 'react-router'
 import ReactDOM from 'react-dom';
 
 const customStyles = {
-  content : {
-    top                   : '50%',
-    left                  : '50%',
-    right                 : 'auto',
-    bottom                : 'auto',
-    marginRight           : '-50%',
-    transform             : 'translate(-50%, -50%)'
+  content: {
+    top: '50%',
+    left: '50%',
+    right: 'auto',
+    bottom: 'auto',
+    marginRight: '-50%',
+    transform: 'translate(-50%, -50%)'
   }
 };
 
@@ -20,33 +20,31 @@ export class Email extends React.Component {
     super(props);
     this.state = {
       modalIsOpen: false,
-      is_main: 0,
       emails: [],
-      message_email: ''
+      message_email: '',
+      id_email_true: null,
+      id_email: null
     };
     this.openModal = this.openModal.bind(this);
     this.closeModal = this.closeModal.bind(this);
     this.handleEmailChange = this.handleEmailChange.bind(this);
-    this.handleInputChange = this.handleInputChange.bind(this);
     this.getEmails = this.getEmails.bind(this);
     this.nextPage = this.nextPage.bind(this);
     this.saveEmail = this.saveEmail.bind(this);
     this.deleteEmail = this.deleteEmail.bind(this);
+    this.currentPrincipalEmail = this.currentPrincipalEmail.bind(this);
   }
 
 
-  handleEmailChange(e){
+  handleEmailChange(e) {
     var emailValid = e.target.value.match(/^([\w.%+-]+)@([\w-]+\.)+([\w]{2,})$/i);
     var message_email = emailValid ? '' : ' Correo Invalido';
     this.setState({message_email: message_email});
     this.setState({email: e.target.value});
   }
 
-  handleInputChange(e){
-    this.setState({is_main: !this.state.is_main});
-  }
 
-  getEmails(){
+  getEmails() {
     fetch('http://149.56.47.36:5000/api/email/', {
       method: 'GET',
       headers: {
@@ -55,7 +53,6 @@ export class Email extends React.Component {
     })
       .then((response) => response.json())
       .then((responseJson) => {
-      console.log(responseJson);
         this.setState({emails: responseJson});
       })
       .catch((error) => {
@@ -64,7 +61,7 @@ export class Email extends React.Component {
   }
 
   deleteEmail(id) {
-    fetch('http://149.56.47.36:5000/api/email/'+id+'/', {
+    fetch('http://149.56.47.36:5000/api/email/' + id + '/', {
       method: 'DELETE',
       headers: {
         'Content-Type': ' application/json',
@@ -73,7 +70,6 @@ export class Email extends React.Component {
       .then((response) => response.json())
       .then((responseJson) => {
         this.getEmails();
-        console.log(responseJson);
       })
       .catch((error) => {
         console.log(error);
@@ -83,10 +79,33 @@ export class Email extends React.Component {
   }
 
 
+  currentPrincipalEmail() {
+    fetch('http://149.56.47.36:5000/api/email/', {
+      method: 'GET',
+      headers: {
+        'Content-Type': ' application/json',
+      }
+    })
+      .then((response) => response.json())
+      .then((responseJson) => {
+        for (var i = 0; i < responseJson.length; i++) {
+          if (responseJson[i].is_main === true) {
+            this.setState({id_email_true: responseJson[i].id});
+            this.setState({id_email: responseJson[i].email});
+          }
+
+        }
+
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
   saveEmail() {
 
     var emailValid = (this.state.email).match(/^([\w.%+-]+)@([\w-]+\.)+([\w]{2,})$/i);
-    if (emailValid!=null){
+    if (emailValid != null) {
       fetch('http://149.56.47.36:5000/api/email/', {
         method: 'POST',
         headers: {
@@ -95,14 +114,11 @@ export class Email extends React.Component {
         body: JSON.stringify({
           email: this.state.email,
           user: 'http://149.56.47.36:5000/api/userkrowdy/1/',
-          is_main: this.state.is_main
+          is_main: false
         })
       })
         .then((response) => response.json())
         .then((responseJson) => {
-
-          console.log(responseJson);
-          this.setState({is_main: false});
           this.getEmails();
           this.closeModal();
         })
@@ -111,6 +127,53 @@ export class Email extends React.Component {
         });
 
     }
+  }
+
+  putPrincipalEmail(id, email, state) {
+    fetch('http://149.56.47.36:5000/api/email/' + this.state.id_email_true + '/', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': ' application/json',
+      },
+      body: JSON.stringify({
+        user: 'http://149.56.47.36:5000/api/userkrowdy/1/',
+        email: this.state.id_email,
+        is_main: false,
+      })
+    })
+      .then((response) => response.json())
+      .then((responseJson) => {
+        this.getEmails();
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+
+    fetch('http://149.56.47.36:5000/api/email/' + id + '/', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': ' application/json',
+      },
+      body: JSON.stringify({
+        user: 'http://149.56.47.36:5000/api/userkrowdy/1/',
+        email: email,
+        is_main: state,
+      })
+    })
+      .then((response) => response.json())
+      .then((responseJson) => {
+        if (state === true) {
+          this.setState({id_email_true: id});
+          this.setState({id_email: email});
+        }
+
+        this.getEmails();
+
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+    this.getEmails();
   }
 
 
@@ -126,62 +189,64 @@ export class Email extends React.Component {
     this.setState({modalIsOpen: false});
   }
 
-  componentWillMount(){
+  componentWillMount() {
+    this.currentPrincipalEmail()
     this.getEmails();
   }
 
-    render() {
-        let that = this;
-        return (
-            <div>
-                <h3>Agregar Emails</h3>
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>Email</th>
-                    <th>Principal</th>
-                    <th>Eliminar</th>
-                  </tr>
-                </thead>
-                <tbody>
-              {this.state.emails.map(function (item, i) {
-                return (
-                    <tr>
-                      <td>{item.email}</td>
-                      <td>{(item.is_main === true) ? 'Si' : 'No'}</td>
-                      <td><button className="btn btn-primary" onClick={() =>that.deleteEmail(item.id)}>Eliminar</button></td>
-                    </tr>
-                )
-              })}
-                </tbody>
-              </table>
-              <button className="btn btn-primary" onClick={this.openModal}>Agregar Email</button>
-              <button className="btn btn-primary" onClick={this.nextPage}>Siguiente</button>
-              <Modal
-                isOpen={this.state.modalIsOpen}
-                onAfterOpen={this.afterOpenModal}
-                onRequestClose={this.closeModal}
-                style={customStyles}
-                contentLabel="Example Modal"
-              >
-                <h2>Agregar Email</h2>
-                <br/>
-                <label htmlFor="email">Email:</label>
-                <br/>
-                <input type="email" className="email" onChange={this.handleEmailChange}/>
-                <br/>
-                <label htmlFor="email">Es Principal:  </label>
-                <input
-                  name="main"
-                  type="checkbox"
-                  checked={this.state.is_main}
-                  onChange={this.handleInputChange} />
-                <div style={{Color: 'blue'}}>{this.state.message_email}</div>
-                <br/>
-                <button className="btn btn-primary" onClick={this.saveEmail}>Guardar</button>
-                <button className="btn btn-primary" onClick={this.closeModal}>Cerrar</button>
-              </Modal>
-            </div>
-        );
-    }
+  render() {
+    var emailList = [];
+    this.state.emails.map((item, i) => {
+      emailList.push(
+        <tr>
+          <td>{item.email}</td>
+          <td>{(item.is_main === true) ? 'Si' : 'No'}</td>
+          <td>{(item.is_main === true) ? '' :
+            <button className="btn btn-primary" onClick={() => this.deleteEmail(item.id)}>Eliminar</button>}</td>
+          <td>{(item.is_main === true) ? '' :
+            <button className="btn btn-primary" onClick={() => this.putPrincipalEmail(item.id, item.email, true)}>Email
+              Principal</button>}</td>
+        </tr>
+      )
+    })
+    return (
+      <div>
+        <h3>Agregar Emails</h3>
+        <table className="table table-bordered">
+          <thead>
+          <tr>
+            <th>Email</th>
+            <th>Principal</th>
+            <th>Eliminar</th>
+            <th></th>
+          </tr>
+          </thead>
+          <tbody>
+          {emailList}
+          </tbody>
+        </table>
+        <button className="btn btn-primary" onClick={this.openModal}>Agregar Email</button>
+        <button className="btn btn-primary" onClick={this.nextPage}>Siguiente</button>
+        <Modal
+          isOpen={this.state.modalIsOpen}
+          onAfterOpen={this.afterOpenModal}
+          onRequestClose={this.closeModal}
+          style={customStyles}
+          contentLabel="Example Modal"
+        >
+          <h2>Agregar Email</h2>
+          <br/>
+          <label htmlFor="email">Email:</label>
+          <br/>
+          <input type="email" className="email" onChange={this.handleEmailChange}/>
+          <br/>
+          <div style={{Color: 'blue'}}>{this.state.message_email}</div>
+          <br/>
+          <button className="btn btn-primary" onClick={this.saveEmail}>Guardar</button>
+          &nbsp;&nbsp;&nbsp;
+          <button className="btn btn-primary" onClick={this.closeModal}>Cerrar</button>
+        </Modal>
+      </div>
+    );
+  }
 }
